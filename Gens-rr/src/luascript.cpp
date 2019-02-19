@@ -27,6 +27,8 @@ extern int (*Update_Frame_Fast)();
 extern unsigned int ReadValueAtHardwareAddress(unsigned int address, unsigned int size);
 extern bool ReadCellAtVDPAddress(unsigned short address, unsigned char *cell);
 extern bool ReadVDPPaletteLine(unsigned short line, unsigned short *pal);
+extern bool ReadWordAtVDP_VRAM(unsigned short address, unsigned short *word);
+extern bool ReadWordAtVDP_VSRAM(unsigned short address, unsigned short *word);
 extern bool WriteCellToVDPAddress(unsigned short address, unsigned char *cell);
 extern bool WriteVDPPaletteLine(unsigned short line, unsigned short *pal);
 extern bool WriteValueAtHardwareAddress(unsigned int address, unsigned int value, unsigned int size, bool hookless=false);
@@ -35,6 +37,7 @@ extern bool WriteValueAtHardwareROMAddress(unsigned int address, unsigned int va
 extern bool IsHardwareAddressValid(unsigned int address);
 extern bool IsHardwareRAMAddressValid(unsigned int address);
 extern bool IsHardwareROMAddressValid(unsigned int address);
+extern int GetVRAMTableName(unsigned short address);
 extern "C" int disableSound2, disableRamSearchUpdate;
 extern "C" int Clear_Sound_Buffer(void);
 extern long long GetCurrentInputCondensed();
@@ -345,6 +348,7 @@ DEFINE_LUA_FUNCTION(vdp_readcell, "address[,count]")
 
 	return 2;
 }
+
 DEFINE_LUA_FUNCTION(vdp_writecell, "address,celldata")
 {
 	unsigned short address = luaL_checkinteger(L,1);
@@ -451,6 +455,32 @@ DEFINE_LUA_FUNCTION(vdp_writepalette, "[line,]paldata")
 	} while (blah);
 
 	lua_pushinteger(L,count);
+	return 1;
+}
+DEFINE_LUA_FUNCTION(vdp_readwordvram, "address")
+{
+	unsigned short address = luaL_checkinteger(L, 1);
+
+	unsigned short value = 0;
+	bool blah = true;
+
+	blah = ReadWordAtVDP_VRAM(address, &value);
+
+	lua_settop(L, 0);
+	lua_pushinteger(L, value);
+	return 1;
+}
+DEFINE_LUA_FUNCTION(vdp_readwordvsram, "address")
+{
+	unsigned short address = luaL_checkinteger(L, 1);
+	
+	unsigned short value = 0;
+	bool blah = true;
+
+	blah = ReadWordAtVDP_VSRAM(address, &value);
+	
+	lua_settop(L, 0);
+	lua_pushinteger(L, value);
 	return 1;
 }
 DEFINE_LUA_FUNCTION(gens_registerbefore, "func")
@@ -642,10 +672,10 @@ DEFINE_LUA_FUNCTION(input_popup, "message[,type=\"yesno\"[,icon=\"question\"]]")
 	return doPopup(L, "yesno", "question");
 }
 
-const char *prompt_str = new char[];
-const char *prompt_default = new char[];
+const char *prompt_str = new char[4096];
+const char *prompt_default = new char[4096];
 int prompt_maxlength;
-char *prompt_result = new char[];
+char *prompt_result = new char[4096];
 
 LRESULT CALLBACK LuaPromptProc(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -4148,6 +4178,8 @@ static const struct luaL_reg vdplib [] =
 	{"writecell", vdp_writecell},
 	{"readpalette", vdp_readpalette},
 	{"writepalette", vdp_writepalette},
+	{ "readwordvram", vdp_readwordvram },
+	{ "readwordvsram", vdp_readwordvsram },
 	{NULL, NULL}
 };
 
