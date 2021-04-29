@@ -1,7 +1,7 @@
 #include <windows.h>
 #include <stdio.h>
 #include <errno.h>
-#include <string.h>
+#include <string>
 #include <assert.h>
 #include <map>
 #include <vector>
